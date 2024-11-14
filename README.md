@@ -5,22 +5,46 @@ Here's the updated version of your `README.md` to include the new `pgadmin` setu
 # Docker Container Setup for PostgreSQL, Redis, RabbitMQ, and pgAdmin
 
 Great! Now that we have the correct images and tags listed in your `docker images` output, let's make sure everything is aligned with your current configuration and the Docker container setup.
-
-### Docker Images Available:
-- **PostgreSQL**: `bitnami/postgresql:14.13.0-debian-12-r26`
-- **Redis**: `bitnami/redis:latest`
-- **RabbitMQ**: `bitnami/rabbitmq:latest`
-- **pgAdmin**: `elestio/pgadmin:latest`
-
-### Let's proceed with verifying and updating your commands.
+Here’s the updated `README.md` with the Docker network creation at the top and sample environment variables for each container.
 
 ---
 
-### 1. **PostgreSQL Setup**
+# Docker Container Setup for PostgreSQL, Redis, RabbitMQ, and pgAdmin
 
-Your image tag is `14.13.0-debian-12-r26`, which corresponds to the latest version of PostgreSQL in the Bitnami repository. You already have the correct `POSTGRES_USER` and `POSTGRES_PASSWORD` set, so let's include the correct port mapping.
+This guide provides instructions for setting up PostgreSQL, Redis (with and without a password), RabbitMQ, and pgAdmin in Docker containers.
 
-The `postgres` container should be configured as follows:
+---
+
+### 1. **Create the Docker Network**
+
+If you haven't already created the custom network `atcode-network`, do so with:
+
+```bash
+docker network create atcode-network
+```
+
+---
+
+### Environment Variables
+
+Here are sample environment variables to use for each service:
+
+```env
+# PostgreSQL
+DATABASE_URL="postgresql://postgresuser:postgrespassword@localhost:5432/tigerhead?schema=public"
+
+# Redis (choose based on whether you’re using a password or not)
+REDIS_URL="redis://:redispassword@localhost:6379"  # with password
+# OR
+REDIS_URL="redis://localhost:6379"                 # without password
+
+# RabbitMQ
+RABBITMQ_URL="amqp://rabbitmquser:rabbitmqpassword@localhost:5672"
+```
+
+---
+
+### 2. **PostgreSQL Setup**
 
 ```bash
 docker run -d --name postgres \
@@ -33,9 +57,11 @@ docker run -d --name postgres \
 
 ---
 
-### 2. **Redis Setup**
+### 3. **Redis Setup**
 
-The `bitnami/redis` image is the latest available tag, so you're good to go there. The `REDIS_PASSWORD` environment variable is set properly, and port `6379` is exposed. Here's the updated command for Redis:
+You can choose to run Redis **with** or **without a password**:
+
+#### a. Redis with Password
 
 ```bash
 docker run -d --name redis \
@@ -45,13 +71,31 @@ docker run -d --name redis \
   bitnami/redis:latest
 ```
 
+In your `.env` file, configure `REDIS_URL` with the password:
+
+```env
+REDIS_URL="redis://:redispassword@localhost:6379"
+```
+
+#### b. Redis without Password
+
+```bash
+docker run -d --name redis \
+  --network atcode-network \
+  -e ALLOW_EMPTY_PASSWORD=yes \
+  -p 6379:6379 \
+  bitnami/redis:latest
+```
+
+In your `.env` file, update the `REDIS_URL` to remove the password:
+
+```env
+REDIS_URL="redis://localhost:6379"
+```
+
 ---
 
-### 3. **RabbitMQ Setup**
-
-The RabbitMQ container uses the latest tag (`bitnami/rabbitmq:latest`), and your environment variables for setting the default user (`rabbitmquser`) and password (`rabbitmqpassword`) are correct. Also, we'll expose the necessary ports: `5672` for AMQP and `15672` for the RabbitMQ management interface.
-
-Here’s the command for RabbitMQ:
+### 4. **RabbitMQ Setup**
 
 ```bash
 docker run -d --name rabbitmq \
@@ -63,11 +107,15 @@ docker run -d --name rabbitmq \
   bitnami/rabbitmq:latest
 ```
 
+In your `.env` file, configure `RABBITMQ_URL`:
+
+```env
+RABBITMQ_URL="amqp://rabbitmquser:rabbitmqpassword@localhost:5672"
+```
+
 ---
 
-### 4. **pgAdmin Setup**
-
-To run `pgAdmin` with your custom configuration (email, password, and port mapping), use the following command:
+### 5. **pgAdmin Setup**
 
 ```bash
 docker run -d \
@@ -79,35 +127,55 @@ docker run -d \
   elestio/pgadmin:latest
 ```
 
-### Breakdown:
-- **`-p 5050:80`**: Maps port `5050` on your host machine to port `80` inside the container.
-- **`PGADMIN_DEFAULT_EMAIL`**: Sets the default email for logging into pgAdmin.
-- **`PGADMIN_DEFAULT_PASSWORD`**: Sets the password for logging into pgAdmin.
+Access pgAdmin in your browser at `http://localhost:5050`.
 
-You can access pgAdmin in your browser at `http://localhost:5050`.
+---
+
+### **Access Services**:
+
+- **PostgreSQL**: Connect using `psql`:
+
+  ```bash
+  psql -h localhost -U postgresuser -d postgres -p 5432
+  ```
+
+- **Redis**:
+  - With password:
+
+    ```bash
+    redis-cli -h localhost -p 6379 -a redispassword
+    ```
+  - Without password:
+
+    ```bash
+    redis-cli -h localhost -p 6379
+    ```
+
+- **RabbitMQ Management**: Open in your browser:
+
+  ```
+  http://localhost:15672
+  ```
+
+- **pgAdmin**: Open in your browser:
+
+  ```
+  http://localhost:5050
+  ```
 
 ---
 
 ### **Steps to Run the Containers:**
-Now that everything is aligned, follow these steps to ensure everything is set up correctly:
 
-1. **Create the custom Docker network:**
-
-   If you haven't created the network `atcode-network`, do it with:
+1. **Ensure the custom Docker network `atcode-network` is created** (see step 1).
+2. **Run each container** with the commands provided above.
+3. **Verify running containers**:
 
    ```bash
-   docker network create atcode-network
+   docker ps
    ```
 
-2. **Run the containers with the above commands**. 
-
-### 5. **Check running containers**
-
-After running the commands, verify that the containers are up and running, with the ports exposed correctly:
-
-```bash
-docker ps
-```
+---
 
 You should see output similar to this:
 
